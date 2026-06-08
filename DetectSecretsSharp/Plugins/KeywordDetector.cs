@@ -214,6 +214,7 @@ namespace DetectSecretsSharp.Plugins
             string filename,
             string line,
             int lineNumber = 0,
+            bool verify = false,
             CodeSnippet context = null)
         {
             var filetype = FileTypeDetector.DetermineFileType(filename);

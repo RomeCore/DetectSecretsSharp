@@ -45,7 +45,7 @@ namespace DetectSecretsSharp.Core
             params DetectorBase[] detectors)
         {
             var scanner = new Scanner(detectors);
-            return scanner.ScanLine(line, filename);
+            return scanner.ScanLine(line, filename: filename);
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace DetectSecretsSharp.Core
             params DetectorBase[] detectors)
         {
             var scanner = new Scanner(detectors);
-            return await scanner.ScanLineAsync(line, filename).ConfigureAwait(false);
+            return await scanner.ScanLineAsync(line, filename: filename).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace DetectSecretsSharp.Core
         public static SecretsCollection ScanLineDefault(string line, string filename = "adhoc-string-scan")
         {
             var scanner = Scanner.CreateDefault();
-            return scanner.ScanLine(line, filename);
+            return scanner.ScanLine(line, filename: filename);
         }
 
         // ---- Baseline loading ----

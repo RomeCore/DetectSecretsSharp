@@ -90,7 +90,7 @@ namespace DetectSecretsSharp.Tests.Plugins
         {
             var detector = new TestDetector();
             var context = CodeSnippet.FromSingleLine("This is a SECRET value", 10);
-            var results = detector.AnalyzeLine("test.txt", "This is a SECRET value", 10, context);
+            var results = detector.AnalyzeLine("test.txt", "This is a SECRET value", 10, context: context);
 
             Assert.Single(results);
         }

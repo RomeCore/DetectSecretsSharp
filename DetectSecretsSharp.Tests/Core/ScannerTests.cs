@@ -36,7 +36,7 @@ namespace DetectSecretsSharp.Tests.Core
         public void ScanLine_FindsGitHubToken()
         {
             var scanner = new Scanner(new DetectorBase[] { new GitHubTokenDetector() });
-            var results = scanner.ScanLine("ghp_abc123ABC456def789GHI012jkl345MNO678", ".env");
+            var results = scanner.ScanLine("ghp_abc123ABC456def789GHI012jkl345MNO678", filename: ".env");
 
             Assert.NotEmpty(results);
             Assert.Contains(".env", results.Files);
@@ -46,7 +46,7 @@ namespace DetectSecretsSharp.Tests.Core
         public void ScanLine_NoMatch_ReturnsEmpty()
         {
             var scanner = new Scanner(new DetectorBase[] { new GitHubTokenDetector() });
-            var results = scanner.ScanLine("hello world", "f.txt");
+            var results = scanner.ScanLine("hello world", filename: "f.txt");
 
             Assert.Empty(results.Files);
         }

@@ -30,7 +30,8 @@ namespace DetectSecretsSharp.Plugins
         public virtual HashSet<PotentialSecret> AnalyzeLine(
             string filename,
             string line,
-            int lineNumber = 0,
+            int lineNumber = 1,
+            bool verify = false,
             CodeSnippet context = null)
         {
             var output = new HashSet<PotentialSecret>();
@@ -70,8 +71,9 @@ namespace DetectSecretsSharp.Plugins
         public virtual async Task<HashSet<PotentialSecret>> AnalyzeLineAsync(
             string filename,
             string line,
-            int lineNumber = 0,
-            CodeSnippet context = null)
+            int lineNumber = 1,
+			bool verify = false,
+			CodeSnippet context = null)
         {
             var output = new HashSet<PotentialSecret>();
 

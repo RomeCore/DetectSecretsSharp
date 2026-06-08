@@ -53,9 +53,10 @@ namespace DetectSecretsSharp.Plugins
             string filename,
             string line,
             int lineNumber = 0,
-            CodeSnippet context = null)
+			bool verify = false,
+			CodeSnippet context = null)
         {
-            var output = base.AnalyzeLine(filename, line, lineNumber, context);
+            var output = base.AnalyzeLine(filename, line, lineNumber, verify, context);
 
             // Filter by entropy limit
             return new HashSet<PotentialSecret>(

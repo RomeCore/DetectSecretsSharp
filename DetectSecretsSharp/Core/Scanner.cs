@@ -50,9 +50,59 @@ namespace DetectSecretsSharp.Core
         }
 
         /// <summary>
+        /// Scans text and returns found secrets.
+        /// </summary>
+        public SecretsCollection Scan(string text,
+            string filename = "adhoc-string-scan", bool verify = false)
+        {
+            var results = new SecretsCollection();
+            ScanInto(text, results, filename, verify);
+            return results;
+        }
+
+        /// <summary>
+        /// Scans text and adds results to an existing collection.
+        /// </summary>
+        public void ScanInto(string text, SecretsCollection results,
+            string filename = "adhoc-string-scan", bool verify = false)
+        {
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var lineInfo in ProcessLines(lines, filename, verify))
+            {
+                results[filename].Add(lineInfo.Secret);
+            }
+        }
+
+        /// <summary>
+        /// Scans text and returns found secrets.
+        /// </summary>
+        public async Task<SecretsCollection> ScanAsync(string text,
+            string filename = "adhoc-string-scan", bool verify = false)
+        {
+            var results = new SecretsCollection();
+            await ScanIntoAsync(text, results, filename, verify);
+            return results;
+        }
+
+        /// <summary>
+        /// Scans text and adds results to an existing collection.
+        /// </summary>
+        public async Task ScanIntoAsync(string text, SecretsCollection results,
+            string filename = "adhoc-string-scan", bool verify = false)
+        {
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var lineInfo in await ProcessLinesAsync(lines, filename, verify))
+            {
+                results[filename].Add(lineInfo.Secret);
+            }
+        }
+
+        /// <summary>
         /// Scans a single file and returns found secrets.
         /// </summary>
-        public SecretsCollection ScanFile(string filename)
+        public SecretsCollection ScanFile(string filename, bool verify = false)
         {
             var results = new SecretsCollection();
             ScanFileInto(filename, results);
@@ -62,7 +112,7 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Scans a single file and adds results to an existing collection.
         /// </summary>
-        public void ScanFileInto(string filename, SecretsCollection results)
+        public void ScanFileInto(string filename, SecretsCollection results, bool verify = false)
         {
             try
             {
@@ -72,7 +122,7 @@ namespace DetectSecretsSharp.Core
                 var lines = File.ReadAllLines(filename);
                 bool hasSecret = false;
 
-                foreach (var lineInfo in ProcessLines(lines, filename))
+                foreach (var lineInfo in ProcessLines(lines, filename, verify))
                 {
                     results[filename].Add(lineInfo.Secret);
                     hasSecret = true;
@@ -90,12 +140,12 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Scans multiple files (optionally in parallel).
         /// </summary>
-        public SecretsCollection ScanFiles(IEnumerable<string> filenames)
+        public SecretsCollection ScanFiles(IEnumerable<string> filenames, bool verify = false)
         {
             var results = new SecretsCollection();
             foreach (var filename in filenames)
             {
-                ScanFileInto(filename, results);
+                ScanFileInto(filename, results, verify);
             }
             return results;
         }
@@ -103,13 +153,13 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Async version of scanning multiple files.
         /// </summary>
-        public async Task<SecretsCollection> ScanFilesAsync(IEnumerable<string> filenames)
+        public async Task<SecretsCollection> ScanFilesAsync(IEnumerable<string> filenames, bool verify = false)
         {
             var results = new SecretsCollection();
             var tasks = filenames.Select(filename => Task.Run(() =>
             {
                 var fileResults = new SecretsCollection();
-                ScanFileInto(filename, fileResults);
+                ScanFileInto(filename, fileResults, verify);
                 lock (results)
                 {
                     foreach (var file in fileResults.Files)
@@ -129,7 +179,7 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Scans a diff string (unified diff format) for added secrets.
         /// </summary>
-        public SecretsCollection ScanDiff(string diff)
+        public SecretsCollection ScanDiff(string diff, bool verify = false)
         {
             var results = new SecretsCollection();
 
@@ -181,6 +231,7 @@ namespace DetectSecretsSharp.Core
                             currentFile,
                             lineContents[i],
                             lineNumbers[i],
+                            verify,
                             context);
 
                         foreach (var secret in secrets)
@@ -197,14 +248,15 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Scans a single line (for adhoc string scanning).
         /// </summary>
-        public SecretsCollection ScanLine(string line, string filename = "adhoc-string-scan")
+        public SecretsCollection ScanLine(string line, int lineNumber = 1,
+            string filename = "adhoc-string-scan", bool verify = false)
         {
             var results = new SecretsCollection();
-            var context = CodeSnippet.FromSingleLine(line, 1);
+            var context = CodeSnippet.FromSingleLine(line, lineNumber);
 
             foreach (var detector in _detectors)
             {
-                var secrets = detector.AnalyzeLine(filename, line, 0, context);
+                var secrets = detector.AnalyzeLine(filename, line, lineNumber, verify, context);
                 foreach (var secret in secrets)
                 {
                     results[filename].Add(secret);
@@ -217,14 +269,15 @@ namespace DetectSecretsSharp.Core
         /// <summary>
         /// Async version of scanning a single line.
         /// </summary>
-        public async Task<SecretsCollection> ScanLineAsync(string line, string filename = "adhoc-string-scan")
+        public async Task<SecretsCollection> ScanLineAsync(string line, int lineNumber = 1,
+            string filename = "adhoc-string-scan", bool verify = false)
         {
             var results = new SecretsCollection();
-            var context = CodeSnippet.FromSingleLine(line, 1);
+            var context = CodeSnippet.FromSingleLine(line, lineNumber);
 
             foreach (var detector in _detectors)
             {
-                var secrets = await detector.AnalyzeLineAsync(filename, line, 0, context).ConfigureAwait(false);
+                var secrets = await detector.AnalyzeLineAsync(filename, line, lineNumber, verify, context).ConfigureAwait(false);
                 foreach (var secret in secrets)
                 {
                     results[filename].Add(secret);
@@ -275,8 +328,9 @@ namespace DetectSecretsSharp.Core
 
         // ---- Internal line processing ----
 
-        private IEnumerable<LineResult> ProcessLines(string[] allLines, string filename)
+        private IEnumerable<LineResult> ProcessLines(string[] allLines, string filename, bool verify)
         {
+            var result = new List<LineResult>();
             for (int i = 0; i < allLines.Length; i++)
             {
                 string line = allLines[i].TrimEnd();
@@ -286,14 +340,38 @@ namespace DetectSecretsSharp.Core
                 foreach (var detector in _detectors)
                 {
                     var secrets = detector.AnalyzeLine(
-                        filename, line, lineNumber, context);
+                        filename, line, lineNumber, verify, context);
 
                     foreach (var secret in secrets)
                     {
-                        yield return new LineResult(secret, detector);
+                        result.Add(new LineResult(secret, detector));
                     }
                 }
             }
+            return result;
+        }
+
+        private async Task<IEnumerable<LineResult>> ProcessLinesAsync(string[] allLines, string filename, bool verify)
+        {
+            var result = new List<LineResult>();
+            for (int i = 0; i < allLines.Length; i++)
+            {
+                string line = allLines[i].TrimEnd();
+                int lineNumber = i + 1;
+                var context = CodeSnippet.FromLines(allLines, lineNumber);
+
+                foreach (var detector in _detectors)
+                {
+                    var secrets = await detector.AnalyzeLineAsync(
+                        filename, line, lineNumber, verify, context);
+
+                    foreach (var secret in secrets)
+                    {
+                        result.Add(new LineResult(secret, detector));
+                    }
+                }
+            }
+            return result;
         }
 
         /// <summary>
