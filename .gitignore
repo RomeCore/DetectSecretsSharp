@@ -1,0 +1,57 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+## NuGet
+**/[Pp]ackages/*
+*.nupkg
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+## Build
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.exe
+*.pdb
+*.xml
+*.nupkg
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+## OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Test results
+[Tt]est[Rr]esults/
+[Tt]est[Rr]esults[Bb]uild/
+*.trx
+*.coverage
+
+## Logs
+*.log
+*.tmp
+
+## DetectSecretsSharp specific
+proj-references/
+!.gitkeep
+.integrai/
+.llmassist/
+
+## Roslyn
+[Oo]bj/
+[Bb]in/
